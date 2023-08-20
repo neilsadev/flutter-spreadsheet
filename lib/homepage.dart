@@ -207,144 +207,209 @@ class _MyHomePageState extends State<MyHomePage> {
                   ),
                 ),
               )
-            : SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Stack(
-                  children: [
-                    SizedBox(
-                      width: MediaQuery.of(context).size.width +
-                          75 * getColumnCount(),
-                      child: Center(
-                        child: ListView.builder(
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: data.length,
-                          itemBuilder: (context, rowIndex) {
-                            return Row(
-                              children: List.generate(data[rowIndex].length,
-                                  (colIndex) {
-                                return Container(
-                                  width: tableWidth,
-                                  height: tableHeight,
-                                  padding: const EdgeInsets.all(8.0),
-                                  decoration: BoxDecoration(
-                                    border: Border.all(color: Colors.grey),
-                                  ),
-                                  child: Draggable(
-                                    axis: Axis.horizontal,
-                                    feedback:
-                                        Container(), // Empty container during drag
-                                    onDragUpdate: (details) {
-                                      setState(() {
-                                        tableWidth += details.delta.dx;
-                                      });
-                                    },
-                                    onDragEnd: (details) {
-                                      if (tableWidth < 50.0) {
-                                        setState(() {
-                                          tableWidth =
-                                              50.0; // Set a minimum width
-                                        });
-                                      }
-                                    },
-                                    child: TextFormField(
-                                      decoration: const InputDecoration(
-                                        border: InputBorder.none,
-                                      ),
-                                      key: Key(data[rowIndex][colIndex]),
-                                      initialValue: data[rowIndex][colIndex],
-                                      onFieldSubmitted: (newValue) {
-                                        if (newValue.startsWith("=")) {
-                                          newValue = newValue.toUpperCase();
-                                          var evaluatedValue = evaluator
-                                              .evaluate(
-                                                  updateFormulaWithJsonValues(
-                                                      newValue, tableJson))
-                                              .toString();
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        dragHorizontally = !dragHorizontally;
+                      });
+                    },
+                    child: Container(
+                      width: 30.0,
+                      height: 15.0,
+                      decoration: BoxDecoration(
+                        color: dragHorizontally ? Colors.green : Colors.grey,
+                        borderRadius: BorderRadius.circular(15.0),
+                      ),
+                      child: Stack(
+                        children: [
+                          AnimatedPositioned(
+                            duration: Duration(milliseconds: 200),
+                            curve: Curves.easeInOut,
+                            left: dragHorizontally ? 15.0 : 0.0,
+                            child: Container(
+                              width: 15.0,
+                              height: 15.0,
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(15.0),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(
+                    height: 10,
+                  ),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Stack(
+                        children: [
+                          SizedBox(
+                            width: MediaQuery.of(context).size.width +
+                                75 * getColumnCount(),
+                            child: Center(
+                              child: ListView.builder(
+                                physics: const NeverScrollableScrollPhysics(),
+                                itemCount: data.length,
+                                itemBuilder: (context, rowIndex) {
+                                  return Row(
+                                    children: List.generate(
+                                        data[rowIndex].length, (colIndex) {
+                                      return Container(
+                                        width: tableWidth,
+                                        height: tableHeight,
+                                        padding: const EdgeInsets.all(8.0),
+                                        decoration: BoxDecoration(
+                                          border:
+                                              Border.all(color: Colors.grey),
+                                        ),
+                                        child: Draggable(
+                                          axis: dragHorizontally
+                                              ? Axis.horizontal
+                                              : Axis.vertical,
+                                          feedback:
+                                              Container(), // Empty container during drag
+                                          onDragUpdate: (details) {
+                                            if (dragHorizontally) {
+                                              setState(() {
+                                                tableWidth += details.delta.dx;
+                                              });
+                                            } else {
+                                              setState(() {
+                                                tableHeight += details.delta.dy;
+                                              });
+                                            }
+                                          },
+                                          onDragEnd: (details) {
+                                            if (dragHorizontally) {
+                                              if (tableWidth < 50.0) {
+                                                setState(() {
+                                                  tableWidth =
+                                                      50.0; // Set a minimum width
+                                                });
+                                              }
+                                            } else {
+                                              if (tableHeight < 50.0) {
+                                                setState(() {
+                                                  tableHeight =
+                                                      50.0; // Set a minimum height
+                                                });
+                                              }
+                                            }
+                                          },
+                                          child: TextFormField(
+                                            decoration: const InputDecoration(
+                                              border: InputBorder.none,
+                                            ),
+                                            key: Key(data[rowIndex][colIndex]),
+                                            initialValue: data[rowIndex]
+                                                [colIndex],
+                                            onFieldSubmitted: (newValue) {
+                                              if (newValue.startsWith("=")) {
+                                                newValue =
+                                                    newValue.toUpperCase();
+                                                var evaluatedValue = evaluator
+                                                    .evaluate(
+                                                        updateFormulaWithJsonValues(
+                                                            newValue,
+                                                            tableJson))
+                                                    .toString();
 
-                                          setState(() {
-                                            data[rowIndex][colIndex] =
-                                                evaluatedValue;
-                                            tableJson =
-                                                convertToCustomJson(data);
-                                          });
-                                        } else {
-                                          if (newValue.length > maxChars &&
-                                              newValue.length > 13) {
-                                            setState(() {
-                                              tableWidth +=
-                                                  5 * (newValue.length - 13);
-                                            });
-                                          }
-                                          setState(() {
-                                            data[rowIndex][colIndex] = newValue;
-                                            tableJson =
-                                                convertToCustomJson(data);
-                                          });
-                                        }
-                                      },
-                                    ),
+                                                setState(() {
+                                                  data[rowIndex][colIndex] =
+                                                      evaluatedValue;
+                                                  tableJson =
+                                                      convertToCustomJson(data);
+                                                });
+                                              } else {
+                                                if (newValue.length >
+                                                        maxChars &&
+                                                    newValue.length > 13) {
+                                                  setState(() {
+                                                    tableWidth += 5 *
+                                                        (newValue.length - 13);
+                                                  });
+                                                }
+                                                setState(() {
+                                                  data[rowIndex][colIndex] =
+                                                      newValue;
+                                                  tableJson =
+                                                      convertToCustomJson(data);
+                                                });
+                                              }
+                                            },
+                                          ),
+                                        ),
+                                      );
+                                    }),
+                                  );
+                                },
+                              ),
+                            ),
+                          ),
+                          Positioned(
+                            top: getRowCount() * tableHeight,
+                            left: -15,
+                            child: Row(
+                              children: [
+                                IconButton(
+                                  onPressed: () {
+                                    addRow();
+                                  },
+                                  icon: const Icon(
+                                    Icons.add_box,
+                                    color: Colors.red,
                                   ),
-                                );
-                              }),
-                            );
-                          },
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      top: getRowCount() * tableHeight,
-                      left: -15,
-                      child: Row(
-                        children: [
-                          IconButton(
-                            onPressed: () {
-                              addRow();
-                            },
-                            icon: const Icon(
-                              Icons.add_box,
-                              color: Colors.red,
+                                ),
+                                IconButton(
+                                  onPressed: () {
+                                    removeRow();
+                                  },
+                                  icon: const Icon(
+                                    Icons.remove_circle,
+                                    color: Colors.red,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          IconButton(
-                            onPressed: () {
-                              removeRow();
-                            },
-                            icon: const Icon(
-                              Icons.remove_circle,
-                              color: Colors.red,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Positioned(
-                      top: -15,
-                      left: getColumnCount() * tableWidth,
-                      child: Column(
-                        children: [
-                          IconButton(
-                            onPressed: () {
-                              addColumn();
-                            },
-                            icon: const Icon(
-                              Icons.add_box,
-                              color: Colors.red,
-                            ),
-                          ),
-                          IconButton(
-                            onPressed: () {
-                              removeColumn();
-                            },
-                            icon: const Icon(
-                              Icons.remove_circle,
-                              color: Colors.red,
+                          Positioned(
+                            top: -15,
+                            left: getColumnCount() * tableWidth,
+                            child: Column(
+                              children: [
+                                IconButton(
+                                  onPressed: () {
+                                    addColumn();
+                                  },
+                                  icon: const Icon(
+                                    Icons.add_box,
+                                    color: Colors.red,
+                                  ),
+                                ),
+                                IconButton(
+                                  onPressed: () {
+                                    removeColumn();
+                                  },
+                                  icon: const Icon(
+                                    Icons.remove_circle,
+                                    color: Colors.red,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
       ),
       floatingActionButton: FloatingActionButton(
