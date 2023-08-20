@@ -16,6 +16,8 @@ class _MyHomePageState extends State<MyHomePage> {
   dynamic tableJson;
   double tableWidth = 120.0;
   double tableHeight = 60.0;
+  int maxChars = 1;
+  bool dragHorizontally = true;
 
   String convertToCSV(List<List<String>> data) {
     StringBuffer csvBuffer = StringBuffer();
@@ -98,12 +100,19 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   addColumn() {
+    int numColumns = data[0].length; // Get the number of existing columns
+
     List<List<String>> updatedData = [];
-    for (List<String> sublist in data) {
-      List<String> updatedSublist = List.from(sublist);
-      updatedSublist.add("value");
-      updatedData.add(updatedSublist);
+    for (int i = 0; i < data.length; i++) {
+      List<String> sublist = List.from(data[i]);
+      if (i == 0) {
+        sublist.add("Cell${numColumns + 1}");
+      } else {
+        sublist.add("value");
+      }
+      updatedData.add(sublist);
     }
+
     setState(() {
       data = updatedData;
       tableJson = convertToCustomJson(data);
@@ -213,26 +222,30 @@ class _MyHomePageState extends State<MyHomePage> {
                             return Row(
                               children: List.generate(data[rowIndex].length,
                                   (colIndex) {
-                                return GestureDetector(
-                                  onHorizontalDragStart:
-                                      (DragStartDetails details) {
-                                    setState(() {
-                                      tableWidth += 10.0;
-                                    });
-                                  },
-                                  onHorizontalDragDown:
-                                      (DragDownDetails details) {
-                                    setState(() {
-                                      tableHeight += 10.0;
-                                    });
-                                  },
-                                  child: Container(
-                                    width: tableWidth,
-                                    height: tableHeight,
-                                    padding: const EdgeInsets.all(8.0),
-                                    decoration: BoxDecoration(
-                                      border: Border.all(color: Colors.grey),
-                                    ),
+                                return Container(
+                                  width: tableWidth,
+                                  height: tableHeight,
+                                  padding: const EdgeInsets.all(8.0),
+                                  decoration: BoxDecoration(
+                                    border: Border.all(color: Colors.grey),
+                                  ),
+                                  child: Draggable(
+                                    axis: Axis.horizontal,
+                                    feedback:
+                                        Container(), // Empty container during drag
+                                    onDragUpdate: (details) {
+                                      setState(() {
+                                        tableWidth += details.delta.dx;
+                                      });
+                                    },
+                                    onDragEnd: (details) {
+                                      if (tableWidth < 50.0) {
+                                        setState(() {
+                                          tableWidth =
+                                              50.0; // Set a minimum width
+                                        });
+                                      }
+                                    },
                                     child: TextFormField(
                                       decoration: const InputDecoration(
                                         border: InputBorder.none,
@@ -240,8 +253,8 @@ class _MyHomePageState extends State<MyHomePage> {
                                       key: Key(data[rowIndex][colIndex]),
                                       initialValue: data[rowIndex][colIndex],
                                       onFieldSubmitted: (newValue) {
-                                        print(newValue);
                                         if (newValue.startsWith("=")) {
+                                          newValue = newValue.toUpperCase();
                                           var evaluatedValue = evaluator
                                               .evaluate(
                                                   updateFormulaWithJsonValues(
@@ -255,6 +268,13 @@ class _MyHomePageState extends State<MyHomePage> {
                                                 convertToCustomJson(data);
                                           });
                                         } else {
+                                          if (newValue.length > maxChars &&
+                                              newValue.length > 13) {
+                                            setState(() {
+                                              tableWidth +=
+                                                  5 * (newValue.length - 13);
+                                            });
+                                          }
                                           setState(() {
                                             data[rowIndex][colIndex] = newValue;
                                             tableJson =
