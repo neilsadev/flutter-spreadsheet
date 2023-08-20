@@ -13,7 +13,7 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   var evaluator = FormulaEvaluator();
-  Map<String, Map<String, String>>? tableJson;
+  dynamic tableJson;
 
   String convertToCSV(List<List<String>> data) {
     StringBuffer csvBuffer = StringBuffer();
@@ -127,13 +127,51 @@ class _MyHomePageState extends State<MyHomePage> {
 
   generateTable() {
     List<List<String>> genTable = [
-      ['Column1', 'Column2'],
       ['Cell1', 'Cell2'],
+      ['1', '2'],
     ];
     setState(() {
       data = genTable;
       tableJson = convertToCustomJson(data);
     });
+  }
+
+  List<String> extractCellReferencesFromFormula(String formula) {
+    var cellReferences = <String>[];
+
+    var start = formula.indexOf('(');
+    var end = formula.lastIndexOf(')');
+
+    if (start != -1 && end != -1 && end > start) {
+      var references = formula.substring(start + 1, end);
+      var referenceStrings = references.split(',');
+
+      for (var referenceString in referenceStrings) {
+        var trimmedReference = referenceString.trim();
+        if (trimmedReference.isNotEmpty) {
+          cellReferences.add(trimmedReference);
+        }
+      }
+    }
+
+    return cellReferences;
+  }
+
+  String updateFormulaWithJsonValues(String formula, dynamic convertedJson) {
+    var params = extractCellReferencesFromFormula(formula);
+
+    var updatedFormula = formula;
+    for (var param in params) {
+      var key = param[0];
+      var subKey = param.substring(1);
+      if (convertedJson.containsKey(key) &&
+          convertedJson[key].containsKey(subKey)) {
+        var value = convertedJson[key][subKey];
+        updatedFormula = updatedFormula.replaceFirst(param, value);
+      }
+    }
+
+    return updatedFormula;
   }
 
   @override
@@ -174,8 +212,8 @@ class _MyHomePageState extends State<MyHomePage> {
                               children: List.generate(data[rowIndex].length,
                                   (colIndex) {
                                 return Container(
-                                  width: 100,
-                                  height: 50,
+                                  width: 120,
+                                  height: 60,
                                   padding: const EdgeInsets.all(8.0),
                                   decoration: BoxDecoration(
                                     border: Border.all(color: Colors.grey),
@@ -184,16 +222,20 @@ class _MyHomePageState extends State<MyHomePage> {
                                     decoration: const InputDecoration(
                                       border: InputBorder.none,
                                     ),
+                                    key: Key(data[rowIndex][colIndex]),
                                     initialValue: data[rowIndex][colIndex],
-                                    onSaved: (newValue) {
-                                      if (newValue == null) {
-                                        return;
-                                      }
+                                    onFieldSubmitted: (newValue) {
+                                      print(newValue);
                                       if (newValue.startsWith("=")) {
+                                        var evaluatedValue = evaluator
+                                            .evaluate(
+                                                updateFormulaWithJsonValues(
+                                                    newValue, tableJson))
+                                            .toString();
+
                                         setState(() {
-                                          data[rowIndex][colIndex] = evaluator
-                                              .evaluate(newValue)
-                                              .toString();
+                                          data[rowIndex][colIndex] =
+                                              evaluatedValue;
                                           tableJson = convertToCustomJson(data);
                                         });
                                       } else {
@@ -212,7 +254,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       ),
                     ),
                     Positioned(
-                      top: getRowCount() * 50,
+                      top: getRowCount() * 60,
                       left: -15,
                       child: Row(
                         children: [
@@ -239,7 +281,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     ),
                     Positioned(
                       top: -15,
-                      left: getColumnCount() * 100,
+                      left: getColumnCount() * 120,
                       child: Column(
                         children: [
                           IconButton(
