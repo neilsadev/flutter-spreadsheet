@@ -226,7 +226,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       child: Stack(
                         children: [
                           AnimatedPositioned(
-                            duration: Duration(milliseconds: 200),
+                            duration: const Duration(milliseconds: 200),
                             curve: Curves.easeInOut,
                             left: dragHorizontally ? 15.0 : 0.0,
                             child: Container(
