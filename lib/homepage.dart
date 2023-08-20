@@ -14,6 +14,8 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   var evaluator = FormulaEvaluator();
   dynamic tableJson;
+  double tableWidth = 120.0;
+  double tableHeight = 60.0;
 
   String convertToCSV(List<List<String>> data) {
     StringBuffer csvBuffer = StringBuffer();
@@ -211,40 +213,56 @@ class _MyHomePageState extends State<MyHomePage> {
                             return Row(
                               children: List.generate(data[rowIndex].length,
                                   (colIndex) {
-                                return Container(
-                                  width: 120,
-                                  height: 60,
-                                  padding: const EdgeInsets.all(8.0),
-                                  decoration: BoxDecoration(
-                                    border: Border.all(color: Colors.grey),
-                                  ),
-                                  child: TextFormField(
-                                    decoration: const InputDecoration(
-                                      border: InputBorder.none,
+                                return GestureDetector(
+                                  onHorizontalDragStart:
+                                      (DragStartDetails details) {
+                                    setState(() {
+                                      tableWidth += 10.0;
+                                    });
+                                  },
+                                  onHorizontalDragDown:
+                                      (DragDownDetails details) {
+                                    setState(() {
+                                      tableHeight += 10.0;
+                                    });
+                                  },
+                                  child: Container(
+                                    width: tableWidth,
+                                    height: tableHeight,
+                                    padding: const EdgeInsets.all(8.0),
+                                    decoration: BoxDecoration(
+                                      border: Border.all(color: Colors.grey),
                                     ),
-                                    key: Key(data[rowIndex][colIndex]),
-                                    initialValue: data[rowIndex][colIndex],
-                                    onFieldSubmitted: (newValue) {
-                                      print(newValue);
-                                      if (newValue.startsWith("=")) {
-                                        var evaluatedValue = evaluator
-                                            .evaluate(
-                                                updateFormulaWithJsonValues(
-                                                    newValue, tableJson))
-                                            .toString();
+                                    child: TextFormField(
+                                      decoration: const InputDecoration(
+                                        border: InputBorder.none,
+                                      ),
+                                      key: Key(data[rowIndex][colIndex]),
+                                      initialValue: data[rowIndex][colIndex],
+                                      onFieldSubmitted: (newValue) {
+                                        print(newValue);
+                                        if (newValue.startsWith("=")) {
+                                          var evaluatedValue = evaluator
+                                              .evaluate(
+                                                  updateFormulaWithJsonValues(
+                                                      newValue, tableJson))
+                                              .toString();
 
-                                        setState(() {
-                                          data[rowIndex][colIndex] =
-                                              evaluatedValue;
-                                          tableJson = convertToCustomJson(data);
-                                        });
-                                      } else {
-                                        setState(() {
-                                          data[rowIndex][colIndex] = newValue;
-                                          tableJson = convertToCustomJson(data);
-                                        });
-                                      }
-                                    },
+                                          setState(() {
+                                            data[rowIndex][colIndex] =
+                                                evaluatedValue;
+                                            tableJson =
+                                                convertToCustomJson(data);
+                                          });
+                                        } else {
+                                          setState(() {
+                                            data[rowIndex][colIndex] = newValue;
+                                            tableJson =
+                                                convertToCustomJson(data);
+                                          });
+                                        }
+                                      },
+                                    ),
                                   ),
                                 );
                               }),
@@ -254,7 +272,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       ),
                     ),
                     Positioned(
-                      top: getRowCount() * 60,
+                      top: getRowCount() * tableHeight,
                       left: -15,
                       child: Row(
                         children: [
@@ -281,7 +299,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     ),
                     Positioned(
                       top: -15,
-                      left: getColumnCount() * 120,
+                      left: getColumnCount() * tableWidth,
                       child: Column(
                         children: [
                           IconButton(
